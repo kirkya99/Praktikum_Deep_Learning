@@ -2,4 +2,7 @@ jupyter
 bython
 pandas
 numpy
+
+scikit-learn
 matplotlib
+tensorflow
