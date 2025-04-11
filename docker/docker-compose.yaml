@@ -1,0 +1,23 @@
+services:
+  jupyter-tensorflow:
+    # image: tensorflow/tensorflow:2.19.0-gpu-jupyter
+    container_name: jupyter-tensorflow-gpu
+    ports:
+      - "8888:8888"
+      - "9922:22"  # SSH Port für PyCharm
+    volumes:
+      - ../notebooks:/tf/notebooks
+    environment:
+      - JUPYTER_TOKEN=my_secure_token
+      - PYTHONUNBUFFERED=1  # deaktiviert den Buffering von stdout und stderr
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "${UID}:${GID}"
