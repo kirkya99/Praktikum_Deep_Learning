@@ -9,8 +9,11 @@ torchtext
 
 tensorflow
 tensorflow[and-cuda]
+tensorflow_datasets
+# tensorflow-metal # nur Apple-Silicon (M1 ...)
 keras
 keras-nlp
+keras_hub
 
 # LLM
 transformers
@@ -31,5 +34,3 @@ pandas
 matplotlib
 
 scikit-learn
-
-libtf

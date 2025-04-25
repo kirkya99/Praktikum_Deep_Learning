@@ -1,6 +1,6 @@
 services:
   jupyter-tensorflow:
-    # image: tensorflow/tensorflow:2.19.0-gpu-jupyter
+    #image: tensorflow/tensorflow:2.19.0-gpu-jupyter
     container_name: jupyter-tensorflow-gpu
     ports:
       - "8888:8888"
