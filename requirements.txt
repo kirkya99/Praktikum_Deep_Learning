@@ -1,0 +1,36 @@
+jupyter
+jupyterlab
+
+torch
+torchtune
+torchvision
+torchao
+torchtext
+
+tensorflow
+tensorflow[and-cuda]
+tensorflow_datasets
+# tensorflow-metal # nur Apple-Silicon (M1 ...)
+keras
+keras-nlp
+keras_hub
+
+# LLM
+transformers
+sentence-transformers
+huggingface-hub
+adapters
+datasets
+peft
+evaluate
+trl
+tokenizers
+sentencepiece
+tqdm
+
+# Allgemein
+numpy
+pandas
+matplotlib
+
+scikit-learn
