@@ -1,0 +1,23 @@
+services:
+  jupyter-pytorch:
+    # image: pytorch/pytorch:2.2.2-cuda12.1-cudnn8-devel
+    container_name: jupyter-pytorch-gpu
+    ports:
+      - "8888:8888"
+      - "9922:22"  # SSH port for PyCharm
+    volumes:
+      - ../notebooks:/workspace/notebooks
+    environment:
+      - JUPYTER_TOKEN=my_secure_token
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    build:
+      context: .
+      dockerfile: torch.dockerfile
+    user: "${UID}:${GID}"

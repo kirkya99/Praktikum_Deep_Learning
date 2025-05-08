@@ -19,5 +19,5 @@ services:
               capabilities: [gpu]
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: tensorflow.dockerfile
     user: "${UID}:${GID}"

@@ -6,4 +6,4 @@ GID=$(id -g)
 export UID
 export GID
 
-docker compose -f docker/tensorflow-docker-compose.yaml up --build
+docker compose -f docker/torch-docker-compose.yaml up --build
