@@ -8,17 +8,34 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import backend as K
 
+
 def generate_text_with_gru_model(model_url, text, temperature=1.0, num_chars=512):
-    # 1. Load your trained model
+    """
+    Generate text using a pre-trained GRU model.
+
+    Parameters
+    ----------
+    model_url : str
+        URL to the pre-trained GRU model.
+    text : str
+        The text corpus to use for generating text.
+    temperature : float, optional (default=1.0)
+        The temperature to use for generating text. A temperature close to 0 will result in more predictable text, 
+        while a temperature close to 1 will result in more random text.
+    num_chars : int, optional (default=512)
+        The number of characters to generate.
+
+    Returns
+    -------
+    None
+    """
     model = keras.models.load_model(model_url)
 
-    # get sorted list of all unique characters in the corpus
     vocab = sorted(set(text))
-    vocab_size = len(vocab) + 1   # +1 for the OOV token that StringLookup will insert
+    vocab_size = len(vocab) + 1 
 
-    # make lookup layers exactly as in your notebook
     ids_from_chars = keras.layers.StringLookup(
-        vocabulary=vocab, mask_token=None  # no PAD token
+        vocabulary=vocab, mask_token=None
     )
     chars_from_ids = keras.layers.StringLookup(
         vocabulary=ids_from_chars.get_vocabulary(), 
@@ -26,45 +43,34 @@ def generate_text_with_gru_model(model_url, text, temperature=1.0, num_chars=512
         mask_token=None
     )
 
-    # helper to turn a string into a vector of IDs
     def text_to_ids(s: str):
-        # unicode_split → a TF string Tensor of shape (len(s),)
         chars = tf.strings.unicode_split([s], 'UTF-8')
         return ids_from_chars(chars)
 
-    # helper to turn a list of IDs back into text
     def ids_to_text(ids):
         return tf.strings.reduce_join(chars_from_ids(ids), axis=-1).numpy().astype(str)
 
-    # 3. Seed + pad to the fixed window length your model expects
-    seed = "Hey, "
-    seq_length = 100   # <— use whatever you trained with
+    seed = "To be "
+    seq_length = 100
 
-    # convert seed to IDs and pad or trim to length
-    seed_ids = text_to_ids(seed).numpy()[0]   # shape (len(seed),)
-    seed_ids = seed_ids[-seq_length:]        # keep last seq_length chars
-    seed_ids = np.expand_dims(seed_ids, 0)    # make batch of 1
+    seed_ids = text_to_ids(seed).numpy()[0]
+    seed_ids = seed_ids[-seq_length:]     
+    seed_ids = np.expand_dims(seed_ids, 0)
     seed_ids = keras.preprocessing.sequence.pad_sequences(
         seed_ids, maxlen=seq_length, padding='pre'
     )
 
-    # 4. Generate one char at a time
     generated_ids = []
 
     for _ in range(num_chars):
-        # predict next‐char distribution
-        preds = model.predict(seed_ids, verbose=0)[0, -1, :]  # (vocab_size,)
-        # apply temperature
+        preds = model.predict(seed_ids, verbose=0)[0, -1, :]
         preds = np.log(preds + 1e-8) / temperature
         preds = np.exp(preds) / np.sum(np.exp(preds))
-        # sample
         next_id = np.random.choice(len(preds), p=preds)
         generated_ids.append(next_id)
-        # shift window and append
         seed_ids = np.roll(seed_ids, -1, axis=1)
         seed_ids[0, -1] = next_id
 
-    # 5. Decode back to a string
     gen_text = ids_to_text(np.array([generated_ids]))
     print(seed)
 
@@ -76,12 +82,29 @@ def generate_text_with_gru_model(model_url, text, temperature=1.0, num_chars=512
     gc.collect()
 
 def generate_text_with_lstm_model(model_url, text, temperature=1.0, num_chars=512):
-    # 1. Load your trained LSTM model
+    """
+    Generate text using a pre-trained LSTM model.
+
+    Parameters
+    ----------
+    model_url : str
+        URL of the pre-trained LSTM model.
+    text : str
+        The text to be used for generating the vocabulary.
+    temperature : float, optional (default=1.0)
+        The temperature to use for generating text. A temperature close to 0 will result in more predictable text, 
+        while a temperature close to 1 will result in more random text.
+    num_chars : int, optional (default=512)
+        The number of characters to generate.
+
+    Returns
+    -------
+    None
+    """
     model = keras.models.load_model(model_url)
 
-    # 2. Rebuild your char‐level vocabulary/lookups exactly as in training
     vocab = sorted(set(text))
-    vocab_size = len(vocab) + 1   # +1 for any OOV token
+    vocab_size = len(vocab) + 1
 
     ids_from_chars = keras.layers.StringLookup(
         vocabulary=vocab, mask_token=None
@@ -99,34 +122,27 @@ def generate_text_with_lstm_model(model_url, text, temperature=1.0, num_chars=51
     def ids_to_text(ids):
         return tf.strings.reduce_join(chars_from_ids(ids), axis=-1).numpy().astype(str)
 
-    # 3. Prepare your seed and pad/trim to the sequence length you trained with
-    seed = "Hey, this is my LSTM: "
-    seq_length = 100   # ← must match the seq length you used during training
+    seed = "To be "
+    seq_length = 100
 
-    seed_ids = text_to_ids(seed).numpy()[0]      # shape (len(seed),)
-    seed_ids = seed_ids[-seq_length:]           # keep the last seq_length tokens
-    seed_ids = np.expand_dims(seed_ids, 0)       # batch size 1
+    seed_ids = text_to_ids(seed).numpy()[0]
+    seed_ids = seed_ids[-seq_length:]
+    seed_ids = np.expand_dims(seed_ids, 0)
     seed_ids = keras.preprocessing.sequence.pad_sequences(
         seed_ids, maxlen=seq_length, padding='pre'
     )
 
-    # 4. Sampling loop
     generated_ids = []
 
     for _ in range(num_chars):
-        # model.predict will return logits over the vocab
-        logits = model.predict(seed_ids, verbose=0)[0, -1, :]  # shape (vocab_size,)
-        # apply temperature
+        logits = model.predict(seed_ids, verbose=0)[0, -1, :]
         logits = np.log(logits + 1e-8) / temperature
         probs = np.exp(logits) / np.sum(np.exp(logits))
-        # draw one character ID
         next_id = np.random.choice(len(probs), p=probs)
         generated_ids.append(next_id)
-        # slide the window one step and append the new ID
         seed_ids = np.roll(seed_ids, -1, axis=1)
         seed_ids[0, -1] = next_id
 
-    # 5. Decode and print
     gen_text = ids_to_text(np.array([generated_ids]))
     print("Seed:", seed)
     print("Generated continuation:\n")
